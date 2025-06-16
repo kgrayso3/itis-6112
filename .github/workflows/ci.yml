@@ -17,10 +17,18 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.14.0'  # Use your project's Node version
+          node-version: '22.14.0'
+
+      - name: Install @progress/kendo-licensing
+        run: npm install --no-save @progress/kendo-licensing
 
       - name: Configure KendoReact license
         run: npx kendo-ui-license activate --license "${{ secrets.KENDO_UI_LICENSE }}" --email "nanz@progress.com"
+        env:
+          HOME: /home/runner
+
+      - name: Check Telerik license file
+        run: ls -al ~/.telerik || echo "No license file found"
 
       - name: Install dependencies
         run: npm ci
