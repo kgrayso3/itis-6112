@@ -9,17 +9,9 @@
         "lint": "next lint"
     },
     "dependencies": {
-        "react": "^18",
-        "react-dom": "^18",
-        "next": "^15.0.0",
         "@progress/kendo-data-query": "^1.7.1",
         "@progress/kendo-drawing": "^1.20.2",
-        "@progress/kendo-licensing": "^1.5.0",
-        "@progress/kendo-theme-default": "^10.3.1",
-        "@progress/kendo-theme-bootstrap": "^10.3.1",
-        "@progress/kendo-theme-material": "^10.3.1",
-        "@progress/kendo-theme-fluent": "^10.3.1",
-        "@progress/kendo-theme-utils": "^10.3.1",
+        "@progress/kendo-licensing": "^1.6.0",
         "@progress/kendo-react-animation": "^10.0.0",
         "@progress/kendo-react-buttons": "^10.0.0",
         "@progress/kendo-react-charts": "^10.0.0",
@@ -46,6 +38,7 @@
         "@progress/kendo-react-notification": "^10.0.0",
         "@progress/kendo-react-orgchart": "^10.0.0",
         "@progress/kendo-react-pdf": "^10.0.0",
+        "@progress/kendo-react-pdf-viewer": "^10.0.0",
         "@progress/kendo-react-pivotgrid": "^10.0.0",
         "@progress/kendo-react-popup": "^10.0.0",
         "@progress/kendo-react-progressbars": "^10.0.0",
@@ -54,18 +47,25 @@
         "@progress/kendo-react-scrollview": "^10.0.0",
         "@progress/kendo-react-sortable": "^10.0.0",
         "@progress/kendo-react-spreadsheet": "^10.0.0",
+        "@progress/kendo-react-taskboard": "^10.0.0",
         "@progress/kendo-react-tooltip": "^10.0.0",
         "@progress/kendo-react-treelist": "^10.0.0",
         "@progress/kendo-react-treeview": "^10.0.0",
         "@progress/kendo-react-upload": "^10.0.0",
-        "@progress/kendo-react-pdf-viewer": "^10.0.0",
-        "@progress/kendo-react-taskboard": "^10.0.0",
-        "@progress/kendo-svg-icons": "^4.0.0"
+        "@progress/kendo-svg-icons": "^4.0.0",
+        "@progress/kendo-theme-bootstrap": "^10.3.1",
+        "@progress/kendo-theme-default": "^10.3.1",
+        "@progress/kendo-theme-fluent": "^10.3.1",
+        "@progress/kendo-theme-material": "^10.3.1",
+        "@progress/kendo-theme-utils": "^10.3.1",
+        "next": "^15.0.0",
+        "react": "^18",
+        "react-dom": "^18"
     },
     "devDependencies": {
-        "typescript": "^5",
         "@types/node": "^20",
         "@types/react": "^18",
-        "@types/react-dom": "^18"
+        "@types/react-dom": "^18",
+        "typescript": "^5"
     }
 }
