@@ -17,22 +17,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.14.0'
+          node-version: '22.14.0'  # Use your project's Node version
 
-      - name: Debug license key length
-        run: echo "Length: ${LENGTH}"
-        env:
-          LENGTH: ${{ secrets.KENDO_UI_LICENSE }}
-
-      - name: Configure KendoReact license (with debug)
-        run: |
-          echo "Running license activation..."
-          npx kendo-ui-license activate --license "${{ secrets.KENDO_UI_LICENSE }}" --email "nanz@progress.com" --debug || echo "License activation failed"
-        env:
-          HOME: /home/runner
-
-      - name: Check Telerik license file
-        run: ls -al ~/.telerik || echo "No license file found"
+      - name: Configure KendoReact license
+        run: npx kendo-ui-license activate --license "${{ secrets.KENDO_UI_LICENSE }}" --email "nanz@progress.com"
 
       - name: Install dependencies
         run: npm ci
