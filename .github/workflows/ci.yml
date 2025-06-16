@@ -21,6 +21,9 @@ jobs:
 
       - name: Configure KendoReact license
         run: npx kendo-ui-license activate --license "${{ secrets.KENDO_UI_LICENSE }}" --email "nanz@progress.com"
+    
+      - name: Check Telerik license file
+        run: ls -al ~/.telerik || echo "No license file found"
 
       - name: Install dependencies
         run: npm ci
