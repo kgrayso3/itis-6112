@@ -23,7 +23,7 @@ jobs:
         run: npm install --no-save @progress/kendo-licensing
 
       - name: Configure KendoReact license
-        run: npx kendo-ui-license activate --license "${{ secrets.KENDO_UI_LICENSE }}" --email "nanz@progress.com"
+        run: npx kendo-ui-license activate --license "${{ secrets.TELERIK_LICENSE }}" --email "nanz@progress.com"
         env:
           HOME: /home/runner
 
