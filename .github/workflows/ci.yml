@@ -19,19 +19,13 @@ jobs:
         with:
           node-version: '22.14.0'
 
-      - name: Install @progress/kendo-licensing
-        run: npm install --no-save @progress/kendo-licensing
+      - name: Install NPM modules
+        run: npm install
 
-      - name: Configure KendoReact license
-        run: npx kendo-ui-license activate --license "${{ secrets.TELERIK_LICENSE }}" --email "nanz@progress.com"
+      - name: Activate Kendo UI License
+        run: npx kendo-ui-license activate
         env:
-          HOME: /home/runner
-
-      - name: Check Telerik license file
-        run: ls -al ~/.telerik || echo "No license file found"
-
-      - name: Install dependencies
-        run: npm ci
+          TELERIK_LICENSE: ${{ secrets.TELERIK_LICENSE }}
 
       - name: Build Next.js app
         run: npm run build
