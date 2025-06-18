@@ -18,7 +18,7 @@ export default function Header() {
         <AppBarSection><Link href={"/"}><h1>Appointment Manager</h1></Link></AppBarSection>
         <AppBarSpacer />
         <AppBarSection>
-            <Button svgIcon={userIcon} fillMode={'flat'} type="button" onClick={() => router.push('/grid')} />
+            <Button svgIcon={userIcon} fillMode={'flat'} type="button" onClick={() => router.push('/profile')} />
         </AppBarSection>
       </AppBar>)
 }

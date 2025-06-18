@@ -15,12 +15,12 @@ export default function Home() {
   const resources: SchedulerResource[] = [
     {
       name: 'UserType',
-      data: [ { text: '1', value: 1, color: '#5392E4'}, 
-        {text: '2', value: 2, color: '#FF7272'}
+      data: [ { text: 'ownerID', value: "patient", color: '#5392E4'}, 
+        {text: 'ownerID', value: "doctor", color: '#FF7272'}
       ],
       field: 'ownerID', 
       valueField: 'value',
-      textField: 'ownerID', 
+      textField: 'text', 
       colorField: 'color'
     }
   ];

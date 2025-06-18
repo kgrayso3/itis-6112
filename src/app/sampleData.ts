@@ -1,7 +1,7 @@
 const baseData = [
     {
         TaskID: 4,
-        OwnerID: 1,
+        OwnerID: "patient",
         Title: 'Appointment for Matt Smith',
         Description: '',
         StartTimezone: null,
@@ -15,7 +15,7 @@ const baseData = [
     },
     {
         TaskID: 5,
-        OwnerID: 1,
+        OwnerID: "doctor",
         Title: 'Appointment for Tom Baker',
         Description: '',
         StartTimezone: null,
@@ -29,7 +29,7 @@ const baseData = [
     },
     {
         TaskID: 6,
-        OwnerID: 2,
+        OwnerID: "doctor",
         Title: 'Appointment for Billie Piper',
         Description: '',
         StartTimezone: null,
