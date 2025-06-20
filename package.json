@@ -43,7 +43,7 @@
         "@progress/kendo-react-popup": "^10.0.0",
         "@progress/kendo-react-progressbars": "^10.0.0",
         "@progress/kendo-react-ripple": "^10.0.0",
-        "@progress/kendo-react-scheduler": "^10.0.0",
+        "@progress/kendo-react-scheduler": "^11.1.0",
         "@progress/kendo-react-scrollview": "^10.0.0",
         "@progress/kendo-react-sortable": "^10.0.0",
         "@progress/kendo-react-spreadsheet": "^10.0.0",
