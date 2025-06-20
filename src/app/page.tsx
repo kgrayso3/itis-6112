@@ -1,52 +1,95 @@
-"use client"
-import React from 'react'
+'use client';
 
-import { Button } from "@progress/kendo-react-buttons";
-import { Scheduler, DayView, WeekView, WorkWeekView, AgendaView, MonthView, SchedulerResource } from '@progress/kendo-react-scheduler';
+import React, { useState } from 'react';
+import {
+  Scheduler,
+  DayView,
+  SchedulerDataChangeEvent,
+  SchedulerEditItemProps
+} from '@progress/kendo-react-scheduler';
+import { guid } from '@progress/kendo-react-common';
 
-import { sampleData } from "./sampleData"; //TO-DO replace with actual user schedule data from DB 
+const currentUserId = 'user123';
 
-import AppHeader from './header';
+const initialData = [
+  {
+    id: 1,
+    start: new Date(),
+    end: new Date(new Date().getTime() + 30 * 60000),
+    title: 'User 456 appointment',
+    createdBy: 'user456'
+  },
+  {
+    id: 2,
+    start: new Date(new Date().getTime() + 60 * 60000),
+    end: new Date(new Date().getTime() + 90 * 60000),
+    title: 'Your appointment',
+    createdBy: 'user123'
+  }
+];
 
-import styles from "./page.module.css";
+export default function WorkingScheduler() {
+  const [events, setEvents] = useState(initialData);
+  const [editItem, setEditItem] = useState<SchedulerEditItemProps['dataItem'] | null>(null);
 
-export default function Home() {
+  const handleEdit = (e: SchedulerEditItemProps) => {
+    setEditItem(e.dataItem);
+  };
 
-  const resources: SchedulerResource[] = [
-    {
-      name: 'UserType',
-      data: [ { text: 'ownerID', value: "patient", color: '#5392E4'}, 
-        {text: 'ownerID', value: "doctor", color: '#FF7272'}
-      ],
-      field: 'ownerID', 
-      valueField: 'value',
-      textField: 'text', 
-      colorField: 'color'
-    }
-  ];
+  const handleDataChange = (e: SchedulerDataChangeEvent) => {
+    console.log('Data change event:', e);
+    const created = e.created || [];
+    const updated = e.updated || [];
+    const deleted = e.deleted || [];
 
+    console.log('Created:', created);
+    console.log('Updated:', updated);
+    console.log('Deleted:', deleted);
+
+    setEvents(prev => {
+      const deletedIds = new Set(deleted.map(d => d.id));
+      const updatedMap = new Map(updated.map(u => [u.id, u]));
+
+      const preserved = prev
+        .filter(ev => !deletedIds.has(ev.id))
+        .map(ev => {
+          const updatedItem = updatedMap.get(ev.id);
+          if (updatedItem && ev.createdBy === currentUserId) {
+            return { ...updatedItem, createdBy: ev.createdBy };
+          }
+          return ev;
+        });
+
+      const newCreated = created.map(c => ({
+        ...c,
+        id: guid(),
+        createdBy: currentUserId
+      }));
+
+      return [...preserved, ...newCreated];
+    });
+
+    setEditItem(null);
+  };
 
   return (
-    <main>
-      <AppHeader/>
-     
-      <section>
-        <h2>My Calendar</h2>
-         <Scheduler defaultView='month' resources={resources} data={sampleData} editable={{
-                add: true,
-                remove: true,
-                drag: true,
-                resize: true,
-                select: true,
-                edit: true
-            }}>
-                    <DayView />
-                    <WeekView />
-                    <WorkWeekView/>
-                    <MonthView/>
-                    <AgendaView/>
-                </Scheduler>
-      </section>
-    </main>
-  )
+    <Scheduler
+      data={events}
+      onDataChange={handleDataChange}
+      onEdit={handleEdit}
+      editItem={editItem}
+      editable={{ add: true, edit: true, remove: true }}
+      dataItemKey="id"
+      modelFields={{
+        id: 'id',
+        title: 'title',
+        start: 'start',
+        end: 'end',
+        createdBy: 'createdBy'
+      }}
+      height={600}
+    >
+      <DayView />
+    </Scheduler>
+  );
 }
