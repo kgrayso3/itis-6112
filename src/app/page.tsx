@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Scheduler,
   DayView,
@@ -8,13 +8,14 @@ import {
   SchedulerItem,
   SchedulerItemProps,
   SchedulerForm,
-  SchedulerFormEditorProps,
   SchedulerFormProps,
-  SchedulerFormEditor
+  SchedulerFormEditor,
+  WeekView,
+  MonthView,
+  AgendaView
 } from '@progress/kendo-react-scheduler';
+
 import { guid } from '@progress/kendo-react-common';
-import { Input } from '@progress/kendo-react-inputs';
-import { DatePicker } from '@progress/kendo-react-dateinputs';
 
 import styles from './page.module.css';
 
@@ -37,7 +38,6 @@ const initialData = [
   },
 ];
 
-// Custom item styling for read-only events
 const CustomItem = (props: SchedulerItemProps) => {
   const { dataItem, ...others } = props;
 
@@ -64,14 +64,16 @@ const CustomItem = (props: SchedulerItemProps) => {
  
 export const CustomFormEditor = () => {
     return (
-      <p>Cannot edit events you do not own</p>
+      <p>Cannot edit appointments you did not create.</p>
     );
 };
 
 export const CustomEditForm = (props: SchedulerFormProps) => {
 
     const dataItem = props.dataItem;
-    const isOwner = dataItem?.createdBy === currentUserId;
+    const isOwner = dataItem?.createdBy === currentUserId || dataItem?.createdBy === undefined;
+
+    console.log(dataItem?.createdBy)
 
     return (
       <SchedulerForm
@@ -132,6 +134,9 @@ export default function WorkingScheduler() {
       height={600}
     >
       <DayView />
+      <WeekView/>
+      <MonthView/>
+      <AgendaView /> 
     </Scheduler>
   );
 }
