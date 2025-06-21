@@ -1,10 +1,12 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Input, Checkbox } from '@progress/kendo-react-inputs';
+import { Input, Checkbox, InputPrefix, TextBox } from '@progress/kendo-react-inputs';
 import { Button } from '@progress/kendo-react-buttons';
-import { Window } from '@progress/kendo-react-dialogs';  // import Window
+import { Window } from '@progress/kendo-react-dialogs';
 import Header from '../header';
+import { SvgIcon } from '@progress/kendo-react-common';
+import { searchIcon } from '@progress/kendo-svg-icons';
 
 const initialData = [
   {
@@ -18,14 +20,21 @@ const initialData = [
     id: 2,
     start: new Date('2025-06-21T10:00:00'),
     end: new Date('2025-06-21T10:30:00'),
-    title: 'Your appointment',
+    title: 'Bloodwork',
     createdBy: 'user123',
   },
   {
     id: 3,
     start: new Date('2025-06-21T10:00:00'),
     end: new Date('2025-06-21T10:30:00'),
-    title: 'A second appointment',
+    title: 'Checkup',
+    createdBy: 'user123',
+  },
+  {
+    id: 4,
+    start: new Date('2025-06-21T10:00:00'),
+    end: new Date('2025-06-21T10:30:00'),
+    title: 'Fever',
     createdBy: 'user123',
   },
 ];
@@ -43,6 +52,8 @@ export default function Profile() {
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [notesByAppointmentId, setNotesByAppointmentId] = useState({} as Record<number, string>);
+
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleEditClick = () => {
     setDraft({ name, age, emailAlerts, textAlerts });
@@ -73,6 +84,11 @@ export default function Profile() {
     .filter(appt => appt.createdBy === currentUserId)
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
+  // Filter appointments by search term (case-insensitive)
+  const filteredAppointments = userAppointments.filter(appt =>
+    appt.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleAppointmentClick = (appt) => {
     setSelectedAppointment(appt);
   };
@@ -88,14 +104,13 @@ export default function Profile() {
       ...prev,
       [selectedAppointment.id]: val
     }));
-
-    // TO_DO: update appt notes in DB on save 
   };
 
   return (
     <>
       <Header />
       <section style={{ display: 'flex', gap: '2rem' }}>
+        {/* Left column: Profile info / edit form */}
         <div style={{ flex: 1 }}>
           <h2>User Profile Settings</h2>
 
@@ -138,7 +153,7 @@ export default function Profile() {
               </div>
 
               <div>
-                <Button onClick={handleSave} primary>
+                <Button onClick={handleSave} themeColor={'primary'}>
                   Save Changes
                 </Button>
                 <Button onClick={handleCancelClick} style={{ marginLeft: 8 }}>
@@ -155,26 +170,39 @@ export default function Profile() {
                 <li>Email Alerts: {emailAlerts ? 'Yes' : 'No'}</li>
                 <li>Text Alerts: {textAlerts ? 'Yes' : 'No'}</li>
               </ul>
-              <Button onClick={handleEditClick} primary>
+              <Button onClick={handleEditClick} themeColor={'primary'}>
                 Edit Profile
               </Button>
             </>
           )}
 
           <div>
-            <Button onClick={handleLogout} style={{ marginTop: '40px' }}>
+            <Button onClick={handleLogout} style={{ marginTop: '40px' }} >
               Log Out
             </Button>
           </div>
         </div>
 
-        <aside style={{ width: 350 }}>
+        <aside style={{ width: 350, overflow: 'y' }}>
           <h2>Past Appointments</h2>
-          {userAppointments.length === 0 ? (
+
+          <TextBox
+            prefix={() => (
+                        <InputPrefix>
+                            <SvgIcon icon={searchIcon} style={{color: "black"}}/>
+                        </InputPrefix>
+                    )}
+            placeholder="Search appointments..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.value)}
+            style={{ marginBottom: 12 }}
+          />
+
+          {filteredAppointments.length === 0 ? (
             <p>No appointments found.</p>
           ) : (
             <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-              {userAppointments.map(appt => (
+              {filteredAppointments.map(appt => (
                 <li
                   key={appt.id}
                   style={{ marginBottom: '1rem', borderBottom: '1px solid #ccc', paddingBottom: '0.5rem', cursor: 'pointer' }}
@@ -198,6 +226,7 @@ export default function Profile() {
           )}
         </aside>
 
+        {/* Appointment detail window */}
         {selectedAppointment && (
           <Window
             title={`Appointment Details - ${selectedAppointment.title}`}
@@ -219,8 +248,8 @@ export default function Profile() {
                 onChange={handleNotesChange}
               />
               <div style={{ marginTop: 12 }}>
-                <Button onClick={handleWindowClose} themeColor={'primary'}>
-                  Save
+                <Button onClick={handleWindowClose} primary>
+                  Close
                 </Button>
               </div>
             </div>
