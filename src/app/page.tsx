@@ -19,6 +19,9 @@ import { guid } from '@progress/kendo-react-common';
 
 import styles from './page.module.css';
 import Header from './header';
+import { Card, CardBody, CardTitle } from '@progress/kendo-react-layout';
+import { Button } from '@progress/kendo-react-buttons';
+import { Input } from '@progress/kendo-react-inputs';
 
 //TO_DO: Update with userID from DB 
 const currentUserId = 'user123';
@@ -88,6 +91,16 @@ export const CustomEditForm = (props: SchedulerFormProps) => {
 
 export default function WorkingScheduler() {
   const [events, setEvents] = useState(initialData);
+  const [loggedIn, setLoggedIn] = useState(true);
+  const [loginInput, setLoginInput] = useState('');
+
+  const handleLogin = () => {
+    if (loginInput.trim().toLowerCase() === 'user123') {
+      setLoggedIn(true);
+    } else {
+      alert('Invalid username');
+    }
+  };
 
   const handleDataChange = (e: SchedulerDataChangeEvent) => {
     const created = e.created || [];
@@ -118,31 +131,87 @@ export default function WorkingScheduler() {
     });
   };
 
+  function LoginCard({ onLogin }: { onLogin: (username: string, password: string) => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLogin(username, password);
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10vh' }}>
+      <Card style={{ width: 360, padding: '2rem' }}>
+        <CardBody>
+          <CardTitle style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+            Please log in
+          </CardTitle>
+          <form onSubmit={handleSubmit}>
+            <div className="k-form-field" style={{ marginBottom: '1rem' }}>
+              <label>Username</label>
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.value)}
+                required
+              />
+            </div>
+            <div className="k-form-field" style={{ marginBottom: '1.5rem' }}>
+              <label>Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.value)}
+                required
+              />
+            </div>
+            <Button type="submit" themeColor="primary" style={{ width: '100%' }}>
+              Log In
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
   return (
     <>
-    <Header/>
-    <Scheduler
-      data={events}
-      onDataChange={handleDataChange}
-      form={CustomEditForm}
-      editable={{ add: true, edit: true, remove: true }}
-      dataItemKey="id"
-      modelFields={{
-        id: 'id',
-        title: 'title',
-        start: 'start',
-        end: 'end',
-        description: 'description',
-        createdBy: 'createdBy',
-      }}
-      item={CustomItem}
-      height={'90vh'}
-    >
-      <DayView />
-      <WeekView/>
-      <MonthView/>
-      <AgendaView /> 
-    </Scheduler>
+
+    {!loggedIn && 
+      <LoginCard onLogin={(user, pass) => {
+        console.log('Logging in with:', user, pass);
+        // TO_DO: authentication logic
+      }} />
+    }
+
+    { loggedIn && 
+      <>
+        <Header/>
+        <Scheduler
+          data={events}
+          onDataChange={handleDataChange}
+          form={CustomEditForm}
+          editable={{ add: true, edit: true, remove: true }}
+          dataItemKey="id"
+          modelFields={{
+            id: 'id',
+            title: 'title',
+            start: 'start',
+            end: 'end',
+            description: 'description',
+            createdBy: 'createdBy',
+          }}
+          item={CustomItem}
+          height={'90vh'}
+        >
+          <DayView />
+          <WeekView/>
+          <MonthView/>
+          <AgendaView /> 
+        </Scheduler>
+      </>
+    }
     </>
   );
 }
