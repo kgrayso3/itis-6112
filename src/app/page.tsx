@@ -18,9 +18,12 @@ import {
 import { guid } from '@progress/kendo-react-common';
 
 import styles from './page.module.css';
+import Header from './header';
 
+//TO_DO: Update with userID from DB 
 const currentUserId = 'user123';
 
+//TO_DO: Update with events saved to DB 
 const initialData = [
   {
     id: 1,
@@ -116,6 +119,8 @@ export default function WorkingScheduler() {
   };
 
   return (
+    <>
+    <Header/>
     <Scheduler
       data={events}
       onDataChange={handleDataChange}
@@ -131,12 +136,13 @@ export default function WorkingScheduler() {
         createdBy: 'createdBy',
       }}
       item={CustomItem}
-      height={600}
+      height={'90vh'}
     >
       <DayView />
       <WeekView/>
       <MonthView/>
       <AgendaView /> 
     </Scheduler>
+    </>
   );
 }
