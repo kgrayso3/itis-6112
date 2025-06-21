@@ -25,16 +25,16 @@ const initialData = [
   },
   {
     id: 3,
-    start: new Date('2025-06-21T10:00:00'),
-    end: new Date('2025-06-21T10:30:00'),
+    start: new Date('2025-06-21T11:00:00'),
+    end: new Date('2025-06-21T11:30:00'),
     title: 'Checkup',
     createdBy: 'user123',
   },
   {
     id: 4,
-    start: new Date('2025-06-21T10:00:00'),
-    end: new Date('2025-06-21T10:30:00'),
-    title: 'Fever',
+    start: new Date('2025-06-21T13:00:00'),
+    end: new Date('2025-06-21T13:30:00'),
+    title: 'Fever Follow-up',
     createdBy: 'user123',
   },
 ];
@@ -52,7 +52,6 @@ export default function Profile() {
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [notesByAppointmentId, setNotesByAppointmentId] = useState({} as Record<number, string>);
-
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleEditClick = () => {
@@ -72,72 +71,79 @@ export default function Profile() {
     setIsEditing(false);
 
     console.log('User profile updated:', draft);
-    // TO_DO: update DB with new user info  
   };
 
   const handleLogout = () => {
     console.log('User logged out');
-    // TO_DO: implement logout logic 
   };
 
   const userAppointments = initialData
     .filter(appt => appt.createdBy === currentUserId)
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
-  // Filter appointments by search term (case-insensitive)
   const filteredAppointments = userAppointments.filter(appt =>
     appt.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAppointmentClick = (appt) => {
-    setSelectedAppointment(appt);
-  };
+  const handleAppointmentClick = (appt) => setSelectedAppointment(appt);
 
-  const handleWindowClose = () => {
-    setSelectedAppointment(null);
-  };
+  const handleWindowClose = () => setSelectedAppointment(null);
 
   const handleNotesChange = (e) => {
     if (!selectedAppointment) return;
-    const val = e.target.value;
     setNotesByAppointmentId(prev => ({
       ...prev,
-      [selectedAppointment.id]: val
+      [selectedAppointment.id]: e.target.value
     }));
   };
 
   return (
     <>
       <Header />
-      <section style={{ display: 'flex', gap: '2rem' }}>
-        {/* Left column: Profile info / edit form */}
-        <div style={{ flex: 1 }}>
-          <h2>User Profile Settings</h2>
+      <section
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '2rem',
+          padding: '2rem',
+        }}
+      >
+        {/* Profile Card */}
+        <div
+          className="k-card"
+          style={{
+            flex: 1,
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: 'var(--kendo-box-shadow-depth-1)',
+            backgroundColor: 'var(--kendo-component-bg)',
+            minWidth: '300px',
+          }}
+        >
+          <h2 style={{ marginBottom: '1rem' }}>User Profile</h2>
 
           {isEditing ? (
             <>
-              <div className="k-form-field">
-                <label>Name</label>
+              <div className="k-form-field" style={{ marginBottom: '1rem' }}>
+                <label className="k-label">Name</label>
                 <Input
                   value={draft.name}
                   onChange={e => setDraft(d => ({ ...d, name: e.value }))}
-                  required
                 />
               </div>
 
-              <div className="k-form-field">
-                <label>Age</label>
+              <div className="k-form-field" style={{ marginBottom: '1rem' }}>
+                <label className="k-label">Age</label>
                 <Input
                   type="number"
                   value={draft.age ? draft.age.toString() : ''}
                   onChange={e => setDraft(d => ({ ...d, age: Number(e.value) }))}
                   min={1}
-                  required
                 />
               </div>
 
-              <div className="k-form-field">
-                <label>Notification Settings</label>
+              <div className="k-form-field" style={{ marginBottom: '1rem' }}>
+                <label className="k-label">Notifications</label>
                 <div>
                   <Checkbox
                     checked={draft.emailAlerts}
@@ -152,50 +158,71 @@ export default function Profile() {
                 </div>
               </div>
 
-              <div>
-                <Button onClick={handleSave} themeColor={'primary'}>
-                  Save Changes
-                </Button>
-                <Button onClick={handleCancelClick} style={{ marginLeft: 8 }}>
-                  Cancel
-                </Button>
+                <div style={{maxWidth: '50%'}}>
+              <Button onClick={handleSave} themeColor="primary">
+                Save Changes
+              </Button>
+              <Button onClick={handleCancelClick}>
+                Cancel
+              </Button>
               </div>
             </>
           ) : (
             <>
-              <p><strong>Name:</strong> {name || '(not set)'}</p>
-              <p><strong>Age:</strong> {age || '(not set)'}</p>
-              <p><strong>Notifications:</strong></p>
-              <ul>
-                <li>Email Alerts: {emailAlerts ? 'Yes' : 'No'}</li>
-                <li>Text Alerts: {textAlerts ? 'Yes' : 'No'}</li>
-              </ul>
-              <Button onClick={handleEditClick} themeColor={'primary'}>
-                Edit Profile
-              </Button>
+              <p><b>Name:</b> {name || '(not set)'}</p>
+              <p><b>Age:</b> {age || '(not set)'}</p>
+              <div style={{ marginTop: '1rem' }}>
+                <strong>Notifications:</strong>
+                <ul style={{ marginTop: 4, marginLeft: 20 }}>
+                  <li>Email Alerts: {emailAlerts ? 'Yes' : 'No'}</li>
+                  <li>Text Alerts: {textAlerts ? 'Yes' : 'No'}</li>
+                </ul>
+              </div>
+              
             </>
           )}
 
-          <div>
-            <Button onClick={handleLogout} style={{ marginTop: '40px' }} >
+          
+
+          <div style={{ marginTop: '2rem' }}>
+
+            {!isEditing && 
+            <Button onClick={handleEditClick} themeColor="primary">
+                Edit Profile
+              </Button>
+              }
+
+<br/><br/>
+
+            <Button onClick={handleLogout} themeColor="dark">
               Log Out
             </Button>
           </div>
         </div>
 
-        <aside style={{ width: 350, overflow: 'y' }}>
-          <h2>Past Appointments</h2>
+        {/* Appointments Card */}
+        <div
+          className="k-card"
+          style={{
+            width: '375px',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: 'var(--kendo-box-shadow-depth-1)',
+            backgroundColor: 'var(--kendo-component-bg)',
+          }}
+        >
+          <h2 style={{ marginBottom: '1rem' }}>Past Appointments</h2>
 
           <TextBox
             prefix={() => (
-                        <InputPrefix>
-                            <SvgIcon icon={searchIcon} style={{color: "black"}}/>
-                        </InputPrefix>
-                    )}
+              <InputPrefix>
+                <SvgIcon icon={searchIcon} style={{ color: 'black' }} />
+              </InputPrefix>
+            )}
             placeholder="Search appointments..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.value)}
-            style={{ marginBottom: 12 }}
+            style={{ marginBottom: '1rem' }}
           />
 
           {filteredAppointments.length === 0 ? (
@@ -205,8 +232,12 @@ export default function Profile() {
               {filteredAppointments.map(appt => (
                 <li
                   key={appt.id}
-                  style={{ marginBottom: '1rem', borderBottom: '1px solid #ccc', paddingBottom: '0.5rem', cursor: 'pointer' }}
                   onClick={() => handleAppointmentClick(appt)}
+                  style={{
+                    borderBottom: '1px solid #eee',
+                    padding: '0.5rem 0',
+                    cursor: 'pointer',
+                  }}
                   tabIndex={0}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -218,24 +249,23 @@ export default function Profile() {
                 >
                   <strong>{appt.title}</strong><br />
                   <small>
-                    {appt.start.toLocaleString()} - {appt.end.toLocaleTimeString()}
+                    {appt.start.toLocaleString()} – {appt.end.toLocaleTimeString()}
                   </small>
                 </li>
               ))}
             </ul>
           )}
-        </aside>
+        </div>
 
-        {/* Appointment detail window */}
         {selectedAppointment && (
           <Window
             title={`Appointment Details - ${selectedAppointment.title}`}
             onClose={handleWindowClose}
             initialWidth={400}
             initialHeight={350}
-            modal={true}
+            modal
           >
-            <div style={{ padding: 12 }}>
+            <div style={{ padding: '1rem' }}>
               <p><strong>Start:</strong> {selectedAppointment.start.toLocaleString()}</p>
               <p><strong>End:</strong> {selectedAppointment.end.toLocaleString()}</p>
               <p><strong>Title:</strong> {selectedAppointment.title}</p>
@@ -243,12 +273,19 @@ export default function Profile() {
               <label htmlFor="notes"><strong>Notes:</strong></label>
               <textarea
                 id="notes"
-                style={{ width: '100%', minHeight: 100, marginTop: 4 }}
+                style={{
+                  width: '100%',
+                  minHeight: 100,
+                  marginTop: 4,
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '0.5rem',
+                }}
                 value={notesByAppointmentId[selectedAppointment.id] || ''}
                 onChange={handleNotesChange}
               />
               <div style={{ marginTop: 12 }}>
-                <Button onClick={handleWindowClose} primary>
+                <Button onClick={handleWindowClose} themeColor={'primary'}>
                   Close
                 </Button>
               </div>
