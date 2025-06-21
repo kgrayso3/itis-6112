@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Input, Checkbox, InputPrefix, TextBox } from '@progress/kendo-react-inputs';
 import { Button } from '@progress/kendo-react-buttons';
 import { Window } from '@progress/kendo-react-dialogs';
 import Header from '../header';
 import { SvgIcon } from '@progress/kendo-react-common';
 import { searchIcon } from '@progress/kendo-svg-icons';
+import Link from 'next/link';
 
 const initialData = [
   {
@@ -48,11 +50,13 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState({ name, age, emailAlerts, textAlerts });
 
-  const currentUserId = 'user123';
+  const searchParams = useSearchParams();
+  const userId = searchParams.get('userId');
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [notesByAppointmentId, setNotesByAppointmentId] = useState({} as Record<number, string>);
   const [searchTerm, setSearchTerm] = useState('');
+  
 
   const handleEditClick = () => {
     setDraft({ name, age, emailAlerts, textAlerts });
@@ -78,7 +82,7 @@ export default function Profile() {
   };
 
   const userAppointments = initialData
-    .filter(appt => appt.createdBy === currentUserId)
+    .filter(appt => appt.createdBy === userId)
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
   const filteredAppointments = userAppointments.filter(appt =>
@@ -99,6 +103,13 @@ export default function Profile() {
 
   return (
     <>
+    { !userId && 
+        <div style={{width: '100%', height:'100vh', display:'flex', justifyContent:'center', alignItems:'center'}}>
+         <Link href="/"><Button themeColor={'primary'}>Return to Login Page</Button></Link>
+        </div>
+    }
+    { userId && 
+    <>
       <Header />
       <section
         style={{
@@ -108,7 +119,7 @@ export default function Profile() {
           padding: '2rem',
         }}
       >
-        {/* Profile Card */}
+
         <div
           className="k-card"
           style={{
@@ -294,5 +305,7 @@ export default function Profile() {
         )}
       </section>
     </>
+    }
+      </>
   );
 }

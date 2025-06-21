@@ -187,7 +187,7 @@ export default function WorkingScheduler() {
 
     { loggedIn && 
       <>
-        <Header/>
+        <Header userID={currentUserId}/>
         <Scheduler
           data={events}
           onDataChange={handleDataChange}
