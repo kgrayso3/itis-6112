@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Input, Checkbox, InputPrefix, TextBox } from '@progress/kendo-react-inputs';
 import { Button } from '@progress/kendo-react-buttons';
 import { Window } from '@progress/kendo-react-dialogs';
@@ -9,6 +9,8 @@ import Header from '../header';
 import { SvgIcon } from '@progress/kendo-react-common';
 import { searchIcon } from '@progress/kendo-svg-icons';
 import Link from 'next/link';
+
+
 
 const initialData = [
   {
@@ -52,6 +54,7 @@ export default function Profile() {
 
   const searchParams = useSearchParams();
   const userId = searchParams.get('userId');
+  const router = useRouter();
 
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [notesByAppointmentId, setNotesByAppointmentId] = useState({} as Record<number, string>);
@@ -77,7 +80,10 @@ export default function Profile() {
     console.log('User profile updated:', draft);
   };
 
+  
+
   const handleLogout = () => {
+    router.push('/createAccount');
     console.log('User logged out');
   };
 
