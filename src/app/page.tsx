@@ -4,35 +4,35 @@ import React, { useState } from 'react';
 import {
   Scheduler,
   DayView,
+  WeekView,
+  MonthView,
+  AgendaView,
   SchedulerDataChangeEvent,
   SchedulerItem,
   SchedulerItemProps,
   SchedulerForm,
   SchedulerFormProps,
   SchedulerFormEditor,
-  WeekView,
-  MonthView,
-  AgendaView
 } from '@progress/kendo-react-scheduler';
-
 import { guid } from '@progress/kendo-react-common';
-
 import styles from './page.module.css';
+
 import Header from './header';
 import { Card, CardBody, CardTitle } from '@progress/kendo-react-layout';
 import { Button } from '@progress/kendo-react-buttons';
 import { Input } from '@progress/kendo-react-inputs';
+import Link from 'next/link';
 
-//TO_DO: Update with userID from DB 
-const currentUserId = 'user123';
+import { auth } from './firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
-//TO_DO: Update with events saved to DB 
+// Example static event data
 const initialData = [
   {
     id: 1,
     start: new Date(),
     end: new Date(new Date().getTime() + 30 * 60000),
-    title: 'User 456 appointment',
+    title: 'Another user’s appointment',
     createdBy: 'user456',
   },
   {
@@ -40,13 +40,11 @@ const initialData = [
     start: new Date(new Date().getTime() + 60 * 60000),
     end: new Date(new Date().getTime() + 90 * 60000),
     title: 'Your appointment',
-    createdBy: 'user123',
+    createdBy: 'user123', // this will be replaced once logged in
   },
 ];
 
-const CustomItem = (props: SchedulerItemProps) => {
-  const { dataItem, ...others } = props;
-
+const CustomItem = ({ dataItem, currentUserId, ...others }: SchedulerItemProps & { currentUserId: string | null }) => {
   if (!dataItem) return null;
 
   const isOwner = dataItem.createdBy === currentUserId;
@@ -67,42 +65,86 @@ const CustomItem = (props: SchedulerItemProps) => {
     />
   );
 };
- 
-export const CustomFormEditor = () => {
-    return (
-      <p>Cannot edit appointments you did not create.</p>
-    );
+
+const CustomFormEditor = () => <p>Cannot edit appointments you did not create.</p>;
+
+const CustomEditForm = (props: SchedulerFormProps & { currentUserId: string | null }) => {
+  const { dataItem, currentUserId, ...rest } = props;
+  const isOwner = dataItem?.createdBy === currentUserId || dataItem?.createdBy === undefined;
+
+  return (
+    <SchedulerForm
+      {...rest}
+      dataItem={dataItem}
+      editor={isOwner ? SchedulerFormEditor : CustomFormEditor}
+    />
+  );
 };
 
-export const CustomEditForm = (props: SchedulerFormProps) => {
+function LoginCard({ onLogin }: { onLogin: (email: string, password: string) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-    const dataItem = props.dataItem;
-    const isOwner = dataItem?.createdBy === currentUserId || dataItem?.createdBy === undefined;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLogin(email, password);
+  };
 
-    console.log(dataItem?.createdBy)
-
-    return (
-      <SchedulerForm
-        {...props}
-        editor={ isOwner ? SchedulerFormEditor : CustomFormEditor}
-        />
-    );
-};
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10vh' }}>
+      <Card style={{ width: 360, padding: '2rem' }}>
+        <CardBody>
+          <CardTitle style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+            Log In
+          </CardTitle>
+          <form onSubmit={handleSubmit}>
+            <div className="k-form-field" style={{ marginBottom: '1rem' }}>
+              <label>Email</label>
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.value)}
+                required
+              />
+            </div>
+            <div className="k-form-field" style={{ marginBottom: '1.5rem' }}>
+              <label>Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.value)}
+                required
+              />
+            </div>
+            <Button type="submit" themeColor="primary" style={{ width: '100%' }}>
+              Log In
+            </Button>
+            <br /><br />
+            <Link href={'/createAccount'} style={{ textDecoration: 'underline' }}>Create an account</Link>
+          </form>
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
 
 export default function WorkingScheduler() {
   const [events, setEvents] = useState(initialData);
-  const [loggedIn, setLoggedIn] = useState(true);
-  const [loginInput, setLoginInput] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const handleLogin = () => {
-    if (loginInput.trim().toLowerCase() === 'user123') {
-      setLoggedIn(true);
-    } else {
-      alert('Invalid username');
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      setCurrentUserId(user.uid);
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Login failed: ' + (error.message || 'Unknown error'));
     }
   };
 
   const handleDataChange = (e: SchedulerDataChangeEvent) => {
+    if (!currentUserId) return;
+
     const created = e.created || [];
     const updated = e.updated || [];
     const deleted = e.deleted || [];
@@ -131,87 +173,35 @@ export default function WorkingScheduler() {
     });
   };
 
-  function LoginCard({ onLogin }: { onLogin: (username: string, password: string) => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLogin(username, password);
-  };
-
-  return (
-    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10vh' }}>
-      <Card style={{ width: 360, padding: '2rem' }}>
-        <CardBody>
-          <CardTitle style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
-            Please log in
-          </CardTitle>
-          <form onSubmit={handleSubmit}>
-            <div className="k-form-field" style={{ marginBottom: '1rem' }}>
-              <label>Username</label>
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.value)}
-                required
-              />
-            </div>
-            <div className="k-form-field" style={{ marginBottom: '1.5rem' }}>
-              <label>Password</label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.value)}
-                required
-              />
-            </div>
-            <Button type="submit" themeColor="primary" style={{ width: '100%' }}>
-              Log In
-            </Button>
-          </form>
-        </CardBody>
-      </Card>
-    </div>
-  );
-}
+  if (!currentUserId) {
+    return <LoginCard onLogin={handleLogin} />;
+  }
 
   return (
     <>
-
-    {!loggedIn && 
-      <LoginCard onLogin={(user, pass) => {
-        console.log('Logging in with:', user, pass);
-        // TO_DO: authentication logic
-      }} />
-    }
-
-    { loggedIn && 
-      <>
-        <Header userID={currentUserId}/>
-        <Scheduler
-          data={events}
-          onDataChange={handleDataChange}
-          form={CustomEditForm}
-          editable={{ add: true, edit: true, remove: true }}
-          dataItemKey="id"
-          modelFields={{
-            id: 'id',
-            title: 'title',
-            start: 'start',
-            end: 'end',
-            description: 'description',
-            createdBy: 'createdBy',
-          }}
-          item={CustomItem}
-          height={'90vh'}
-        >
-          <DayView />
-          <WeekView/>
-          <MonthView/>
-          <AgendaView /> 
-        </Scheduler>
-      </>
-    }
+      <Header userID={currentUserId} />
+      <Scheduler
+        data={events}
+        onDataChange={handleDataChange}
+        form={(props) => <CustomEditForm {...props} currentUserId={currentUserId} />}
+        editable={{ add: true, edit: true, remove: true }}
+        dataItemKey="id"
+        modelFields={{
+          id: 'id',
+          title: 'title',
+          start: 'start',
+          end: 'end',
+          description: 'description',
+          createdBy: 'createdBy',
+        }}
+        item={(props) => <CustomItem {...props} currentUserId={currentUserId} />}
+        height={'90vh'}
+      >
+        <DayView />
+        <WeekView />
+        <MonthView />
+        <AgendaView />
+      </Scheduler>
     </>
   );
 }
