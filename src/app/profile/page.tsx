@@ -34,7 +34,6 @@ export default function Profile() {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUserId(user.uid);
-        // Load user profile
         const docRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(docRef);
         if (userSnap.exists()) {
@@ -44,15 +43,11 @@ export default function Profile() {
           setEmailAlerts(data.emailAlerts || false);
           setTextAlerts(data.textAlerts || false);
         }
-        // Subscribe to user's appointments collection
         const userAppointmentsRef = doc(db, 'users', user.uid);
-        // Instead of querying appointments here, let's fetch appointments collection filtered by userId
-        // We'll fetch all appointments for this user once:
         const fetchAppointments = async () => {
           try {
             const apptsSnap = await getAppointmentsForUser(user.uid);
             setAppointments(apptsSnap);
-            // Initialize notesByAppointmentId from fetched data
             const notesMap: Record<string, string> = {};
             apptsSnap.forEach((appt) => {
               notesMap[appt.id] = appt.description || '';
@@ -72,10 +67,7 @@ export default function Profile() {
     return () => unsubscribeAuth();
   }, []);
 
-  // Helper: fetch appointments from 'appointments' collection filtered by userId
   const getAppointmentsForUser = async (uid: string) => {
-    // Firestore query to get all appointments where createdBy === uid
-    // We need to import collection, query, where, getDocs
     const { collection, query, where, getDocs } = await import('firebase/firestore');
     const appointmentsCol = collection(db, 'appointments');
     const q = query(appointmentsCol, where('createdBy', '==', uid));
@@ -146,13 +138,12 @@ export default function Profile() {
 
   const handleAppointmentClick = (appt: any) => setSelectedAppointment(appt);
 
-  // Save notes to Firestore
   const saveNotesToFirestore = async (appointmentId: string, notes: string) => {
     if (!appointmentId) return;
     try {
       const apptDocRef = doc(db, 'appointments', appointmentId);
       await updateDoc(apptDocRef, { description: notes });
-      // Update local state as well
+     
       setAppointments((prev) =>
         prev.map((appt) =>
           appt.id === appointmentId ? { ...appt, description: notes } : appt
@@ -191,7 +182,7 @@ export default function Profile() {
 
   return (
     <>
-      <Header />
+      <Header userID={userId!} />
       <section
         style={{
           display: 'flex',
@@ -200,7 +191,6 @@ export default function Profile() {
           padding: '2rem',
         }}
       >
-        {/* Profile Card */}
         <div
           className="k-card"
           style={{
@@ -286,7 +276,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Appointments Card */}
         <div
           className="k-card"
           style={{

@@ -131,7 +131,7 @@ export default function WorkingScheduler() {
         setCurrentUserId(user.uid);
       } else {
         setCurrentUserId(null);
-        setEvents([]); // clear events on logout
+        setEvents([]); 
       }
     });
 
@@ -141,7 +141,6 @@ export default function WorkingScheduler() {
   useEffect(() => {
     if (!currentUserId) return;
 
-    // Subscribe to all appointments in the collection, regardless of creator
     const q = query(collection(db, 'appointments'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const appointments = querySnapshot.docs.map(doc => {

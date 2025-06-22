@@ -18,7 +18,7 @@ interface HeaderProps {
 export default function Header(props: HeaderProps): JSX.Element {
   const router = useRouter();
 
-  const userId: string = props.userID; // Replace with dynamic value if you add login later
+  const userId: string = props.userID; 
 
   const handleProfileClick = (): void => {
     router.push(`/profile?userId=${encodeURIComponent(userId)}`);

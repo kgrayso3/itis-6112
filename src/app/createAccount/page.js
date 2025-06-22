@@ -39,8 +39,7 @@ export default function CreateAccount() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
-
-            // Save to Firestore
+            
             await addUserToFirestore(user.uid, email);
 
             setEmail('');
