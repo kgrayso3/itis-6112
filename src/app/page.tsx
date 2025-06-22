@@ -224,7 +224,7 @@ export default function WorkingScheduler() {
         data={events}
         onDataChange={handleDataChange}
         form={(props) => <CustomEditForm {...props} currentUserId={currentUserId} />}
-        editable={{ add: true, edit: true, remove: true }}
+        editable={{ add: true, edit: true, remove: true, drag: true, resize: true, select: true }}
         dataItemKey="id"
         modelFields={{
           id: 'id',

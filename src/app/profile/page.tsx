@@ -307,7 +307,7 @@ export default function Profile() {
             )}
             placeholder="Search appointments..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.value)}
+            onChange={(e) => setSearchTerm(String(e.value ?? ''))}
             style={{ marginBottom: '1rem' }}
           />
 
