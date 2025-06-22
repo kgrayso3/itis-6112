@@ -152,6 +152,7 @@ export default function WorkingScheduler() {
           end: data.end.toDate ? data.end.toDate() : new Date(data.end),
           description: data.description,
           createdBy: data.createdBy,
+          isAvailable: data.isAvailable || false // Added for availability status
         };
       });
       setEvents(appointments);
@@ -201,12 +202,37 @@ export default function WorkingScheduler() {
           end: appt.end,
           description: appt.description || '',
           createdBy: currentUserId,
+          isAvailable: false // Default to booked when created
         });
       }
     } catch (error) {
       console.error('Error syncing appointments with Firestore:', error);
       alert('Error saving appointments. Please try again.');
     }
+  };
+
+  const handleEventRender = (event: SchedulerEvent) => {
+    const isAvailable = event.dataItem.isAvailable;
+    const isOwner = event.dataItem.createdBy === currentUserId;
+    return {
+      ...event,
+      className: isAvailable ? 'available' : 'booked',
+      editable: isOwner,
+      dataItem: {
+        ...event.dataItem,
+        tooltip: isAvailable
+          ? 'Available Slot'
+          : `Appointment with ${event.dataItem.title || 'Unknown'}`
+      }
+    };
+  };
+
+  const handleDataAction = (action: any) => {
+    if (action.type === 'edit' && action.dataItem.createdBy !== currentUserId) {
+      alert('You can only edit your own appointments.');
+      return false;
+    }
+    return true;
   };
 
   if (!currentUserId) {
@@ -230,6 +256,8 @@ export default function WorkingScheduler() {
         }}
         item={(props) => <CustomItem {...props} currentUserId={currentUserId} />}
         height={'90vh'}
+        eventRender={handleEventRender}
+        onDataAction={handleDataAction}
       >
         <DayView />
         <WeekView />
