@@ -240,7 +240,6 @@ export default function WorkingScheduler() {
         <DayView />
         <WeekView />
         <MonthView />
-        <AgendaView />
       </Scheduler>
     </>
   );
