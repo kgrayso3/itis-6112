@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Scheduler,
   DayView,
@@ -14,7 +14,6 @@ import {
   SchedulerFormProps,
   SchedulerFormEditor,
 } from '@progress/kendo-react-scheduler';
-import { guid } from '@progress/kendo-react-common';
 import styles from './page.module.css';
 
 import Header from './header';
@@ -24,25 +23,18 @@ import { Input } from '@progress/kendo-react-inputs';
 import Link from 'next/link';
 
 import { auth } from './firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
-// Example static event data
-const initialData = [
-  {
-    id: 1,
-    start: new Date(),
-    end: new Date(new Date().getTime() + 30 * 60000),
-    title: 'Another user’s appointment',
-    createdBy: 'user456',
-  },
-  {
-    id: 2,
-    start: new Date(new Date().getTime() + 60 * 60000),
-    end: new Date(new Date().getTime() + 90 * 60000),
-    title: 'Your appointment',
-    createdBy: 'user123', // this will be replaced once logged in
-  },
-];
+import {
+  collection,
+  query,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from 'firebase/firestore';
+import { db } from './firebaseConfig';
 
 const CustomItem = ({ dataItem, currentUserId, ...others }: SchedulerItemProps & { currentUserId: string | null }) => {
   if (!dataItem) return null;
@@ -56,13 +48,17 @@ const CustomItem = ({ dataItem, currentUserId, ...others }: SchedulerItemProps &
     cursor: isOwner ? 'pointer' : 'default',
   };
 
+  // Render the SchedulerItem but override title display with a span if not owner
   return (
-    <SchedulerItem
-      {...others}
-      dataItem={dataItem}
-      className={isOwner ? '' : styles.readonly}
-      style={style}
-    />
+    <SchedulerItem {...others} dataItem={dataItem} className={isOwner ? '' : styles.readonly} style={style}>
+      { !isOwner ? (
+        <div style={{ padding: '4px', fontStyle: 'italic', color: '#555' }}>
+          Busy
+        </div>
+      ) : (
+        dataItem.title
+      )}
+    </SchedulerItem>
   );
 };
 
@@ -128,49 +124,93 @@ function LoginCard({ onLogin }: { onLogin: (email: string, password: string) => 
 }
 
 export default function WorkingScheduler() {
-  const [events, setEvents] = useState(initialData);
+  const [events, setEvents] = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUserId(user.uid);
+      } else {
+        setCurrentUserId(null);
+        setEvents([]); // clear events on logout
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    // Subscribe to all appointments in the collection, regardless of creator
+    const q = query(collection(db, 'appointments'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const appointments = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          title: data.title,
+          start: data.start.toDate ? data.start.toDate() : new Date(data.start),
+          end: data.end.toDate ? data.end.toDate() : new Date(data.end),
+          description: data.description,
+          createdBy: data.createdBy,
+        };
+      });
+      setEvents(appointments);
+    });
+
+    return () => unsubscribe();
+  }, [currentUserId]);
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      setCurrentUserId(user.uid);
-    } catch (error) {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error: any) {
       console.error('Login failed:', error);
       alert('Login failed: ' + (error.message || 'Unknown error'));
     }
   };
 
-  const handleDataChange = (e: SchedulerDataChangeEvent) => {
+  const handleDataChange = async (e: SchedulerDataChangeEvent) => {
     if (!currentUserId) return;
 
     const created = e.created || [];
     const updated = e.updated || [];
     const deleted = e.deleted || [];
 
-    setEvents((prev) => {
-      const deletedIds = new Set(deleted.map((d) => d.id));
-      const updatedMap = new Map(updated.map((u) => [u.id, u]));
+    try {
+      for (const appt of deleted) {
+        // Only allow deleting appointments owned by current user
+        if (appt.createdBy === currentUserId) {
+          await deleteDoc(doc(db, 'appointments', appt.id));
+        }
+      }
 
-      const preserved = prev
-        .filter((ev) => !deletedIds.has(ev.id))
-        .map((ev) => {
-          const updatedItem = updatedMap.get(ev.id);
-          if (updatedItem && ev.createdBy === currentUserId) {
-            return { ...updatedItem, createdBy: ev.createdBy };
-          }
-          return ev;
+      for (const appt of updated) {
+        if (appt.id && appt.createdBy === currentUserId) {
+          await updateDoc(doc(db, 'appointments', appt.id), {
+            title: appt.title,
+            start: appt.start,
+            end: appt.end,
+            description: appt.description || '',
+          });
+        }
+      }
+
+      for (const appt of created) {
+        await addDoc(collection(db, 'appointments'), {
+          title: appt.title,
+          start: appt.start,
+          end: appt.end,
+          description: appt.description || '',
+          createdBy: currentUserId,
         });
-
-      const newCreated = created.map((c) => ({
-        ...c,
-        id: guid(),
-        createdBy: currentUserId,
-      }));
-
-      return [...preserved, ...newCreated];
-    });
+      }
+    } catch (error) {
+      console.error('Error syncing appointments with Firestore:', error);
+      alert('Error saving appointments. Please try again.');
+    }
   };
 
   if (!currentUserId) {

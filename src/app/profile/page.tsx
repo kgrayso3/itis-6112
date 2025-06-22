@@ -1,65 +1,99 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { Input, Checkbox, InputPrefix, TextBox } from '@progress/kendo-react-inputs';
 import { Button } from '@progress/kendo-react-buttons';
 import { Window } from '@progress/kendo-react-dialogs';
-import Header from '../header';
 import { SvgIcon } from '@progress/kendo-react-common';
 import { searchIcon } from '@progress/kendo-svg-icons';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
+import Header from '../header';
 
-
-const initialData = [
-  {
-    id: 1,
-    start: new Date('2025-06-20T09:00:00'),
-    end: new Date('2025-06-20T09:30:00'),
-    title: 'User 456 appointment',
-    createdBy: 'user456',
-  },
-  {
-    id: 2,
-    start: new Date('2025-06-21T10:00:00'),
-    end: new Date('2025-06-21T10:30:00'),
-    title: 'Bloodwork',
-    createdBy: 'user123',
-  },
-  {
-    id: 3,
-    start: new Date('2025-06-21T11:00:00'),
-    end: new Date('2025-06-21T11:30:00'),
-    title: 'Checkup',
-    createdBy: 'user123',
-  },
-  {
-    id: 4,
-    start: new Date('2025-06-21T13:00:00'),
-    end: new Date('2025-06-21T13:30:00'),
-    title: 'Fever Follow-up',
-    createdBy: 'user123',
-  },
-];
+import { auth, db } from '../firebaseConfig';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export default function Profile() {
+  const router = useRouter();
+
+  const [userId, setUserId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [age, setAge] = useState(0);
   const [emailAlerts, setEmailAlerts] = useState(false);
   const [textAlerts, setTextAlerts] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState({ name, age, emailAlerts, textAlerts });
+  const [draft, setDraft] = useState({ name: '', age: 0, emailAlerts: false, textAlerts: false });
 
-  const searchParams = useSearchParams();
-  const userId = searchParams.get('userId');
-  const router = useRouter();
-
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [notesByAppointmentId, setNotesByAppointmentId] = useState({} as Record<number, string>);
+  const [appointments, setAppointments] = useState<any[]>([]); // Will hold appointments loaded from Firestore
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
+  const [notesByAppointmentId, setNotesByAppointmentId] = useState<Record<string, string>>({});
   const [searchTerm, setSearchTerm] = useState('');
-  
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUserId(user.uid);
+        // Load user profile
+        const docRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(docRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          setName(data.name || '');
+          setAge(data.age || 0);
+          setEmailAlerts(data.emailAlerts || false);
+          setTextAlerts(data.textAlerts || false);
+        }
+        // Subscribe to user's appointments collection
+        const userAppointmentsRef = doc(db, 'users', user.uid);
+        // Instead of querying appointments here, let's fetch appointments collection filtered by userId
+        // We'll fetch all appointments for this user once:
+        const fetchAppointments = async () => {
+          try {
+            const apptsSnap = await getAppointmentsForUser(user.uid);
+            setAppointments(apptsSnap);
+            // Initialize notesByAppointmentId from fetched data
+            const notesMap: Record<string, string> = {};
+            apptsSnap.forEach((appt) => {
+              notesMap[appt.id] = appt.description || '';
+            });
+            setNotesByAppointmentId(notesMap);
+          } catch (error) {
+            console.error('Error fetching appointments:', error);
+          }
+        };
+        fetchAppointments();
+      } else {
+        setUserId(null);
+        setAppointments([]);
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  // Helper: fetch appointments from 'appointments' collection filtered by userId
+  const getAppointmentsForUser = async (uid: string) => {
+    // Firestore query to get all appointments where createdBy === uid
+    // We need to import collection, query, where, getDocs
+    const { collection, query, where, getDocs } = await import('firebase/firestore');
+    const appointmentsCol = collection(db, 'appointments');
+    const q = query(appointmentsCol, where('createdBy', '==', uid));
+    const querySnapshot = await getDocs(q);
+    const appts: any[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      appts.push({
+        id: docSnap.id,
+        title: data.title,
+        start: data.start.toDate ? data.start.toDate() : new Date(data.start),
+        end: data.end.toDate ? data.end.toDate() : new Date(data.end),
+        createdBy: data.createdBy,
+        description: data.description || '',
+      });
+    });
+    return appts;
+  };
 
   const handleEditClick = () => {
     setDraft({ name, age, emailAlerts, textAlerts });
@@ -70,51 +104,92 @@ export default function Profile() {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    setName(draft.name);
-    setAge(draft.age);
-    setEmailAlerts(draft.emailAlerts);
-    setTextAlerts(draft.textAlerts);
-    setIsEditing(false);
+  const handleSave = async () => {
+    const updatedProfile = {
+      name: draft.name,
+      age: draft.age,
+      emailAlerts: draft.emailAlerts,
+      textAlerts: draft.textAlerts,
+    };
 
-    console.log('User profile updated:', draft);
+    try {
+      if (userId) {
+        await setDoc(doc(db, 'users', userId), updatedProfile, { merge: true });
+        setName(draft.name);
+        setAge(draft.age);
+        setEmailAlerts(draft.emailAlerts);
+        setTextAlerts(draft.textAlerts);
+        setIsEditing(false);
+        console.log('User profile updated:', updatedProfile);
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile');
+    }
   };
 
-  
-
-  const handleLogout = () => {
-    router.push('/createAccount');
-    console.log('User logged out');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      alert('Failed to log out');
+    }
   };
 
-  const userAppointments = initialData
-    .filter(appt => appt.createdBy === userId)
+  const filteredAppointments = appointments
+    .filter((appt) =>
+      appt.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     .sort((a, b) => b.start.getTime() - a.start.getTime());
 
-  const filteredAppointments = userAppointments.filter(appt =>
-    appt.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleAppointmentClick = (appt: any) => setSelectedAppointment(appt);
 
-  const handleAppointmentClick = (appt) => setSelectedAppointment(appt);
+  // Save notes to Firestore
+  const saveNotesToFirestore = async (appointmentId: string, notes: string) => {
+    if (!appointmentId) return;
+    try {
+      const apptDocRef = doc(db, 'appointments', appointmentId);
+      await updateDoc(apptDocRef, { description: notes });
+      // Update local state as well
+      setAppointments((prev) =>
+        prev.map((appt) =>
+          appt.id === appointmentId ? { ...appt, description: notes } : appt
+        )
+      );
+      console.log('Notes saved for appointment', appointmentId);
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+      alert('Failed to save notes.');
+    }
+  };
 
-  const handleWindowClose = () => setSelectedAppointment(null);
+  const handleWindowClose = () => {
+    if (selectedAppointment) {
+      const currentNotes = notesByAppointmentId[selectedAppointment.id] || '';
+      saveNotesToFirestore(selectedAppointment.id, currentNotes);
+    }
+    setSelectedAppointment(null);
+  };
 
-  const handleNotesChange = (e) => {
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!selectedAppointment) return;
-    setNotesByAppointmentId(prev => ({
+    setNotesByAppointmentId((prev) => ({
       ...prev,
-      [selectedAppointment.id]: e.target.value
+      [selectedAppointment.id]: e.target.value,
     }));
   };
 
+  if (!userId) {
+    return (
+      <div style={{ width: '100%', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <p>Loading profile...</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-    { !userId && 
-        <div style={{width: '100%', height:'100vh', display:'flex', justifyContent:'center', alignItems:'center'}}>
-         <Link href="/"><Button themeColor={'primary'}>Return to Login Page</Button></Link>
-        </div>
-    }
-    { userId && 
     <>
       <Header />
       <section
@@ -125,7 +200,7 @@ export default function Profile() {
           padding: '2rem',
         }}
       >
-
+        {/* Profile Card */}
         <div
           className="k-card"
           style={{
@@ -145,7 +220,7 @@ export default function Profile() {
                 <label className="k-label">Name</label>
                 <Input
                   value={draft.name}
-                  onChange={e => setDraft(d => ({ ...d, name: e.value }))}
+                  onChange={(e) => setDraft((d) => ({ ...d, name: e.value }))}
                 />
               </div>
 
@@ -154,7 +229,7 @@ export default function Profile() {
                 <Input
                   type="number"
                   value={draft.age ? draft.age.toString() : ''}
-                  onChange={e => setDraft(d => ({ ...d, age: Number(e.value) }))}
+                  onChange={(e) => setDraft((d) => ({ ...d, age: Number(e.value) }))}
                   min={1}
                 />
               </div>
@@ -164,24 +239,22 @@ export default function Profile() {
                 <div>
                   <Checkbox
                     checked={draft.emailAlerts}
-                    onChange={e => setDraft(d => ({ ...d, emailAlerts: e.value }))}
+                    onChange={(e) => setDraft((d) => ({ ...d, emailAlerts: e.value }))}
                     label="Opt-in to email alerts"
                   />
                   <Checkbox
                     checked={draft.textAlerts}
-                    onChange={e => setDraft(d => ({ ...d, textAlerts: e.value }))}
+                    onChange={(e) => setDraft((d) => ({ ...d, textAlerts: e.value }))}
                     label="Opt-in to text alerts"
                   />
                 </div>
               </div>
 
-                <div style={{maxWidth: '50%'}}>
-              <Button onClick={handleSave} themeColor="primary">
-                Save Changes
-              </Button>
-              <Button onClick={handleCancelClick}>
-                Cancel
-              </Button>
+              <div style={{ maxWidth: '50%' }}>
+                <Button onClick={handleSave} themeColor="primary">
+                  Save Changes
+                </Button>
+                <Button onClick={handleCancelClick}>Cancel</Button>
               </div>
             </>
           ) : (
@@ -195,21 +268,17 @@ export default function Profile() {
                   <li>Text Alerts: {textAlerts ? 'Yes' : 'No'}</li>
                 </ul>
               </div>
-              
             </>
           )}
 
-          
-
           <div style={{ marginTop: '2rem' }}>
-
-            {!isEditing && 
-            <Button onClick={handleEditClick} themeColor="primary">
+            {!isEditing && (
+              <Button onClick={handleEditClick} themeColor="primary">
                 Edit Profile
               </Button>
-              }
+            )}
 
-<br/><br/>
+            <br /><br />
 
             <Button onClick={handleLogout} themeColor="dark">
               Log Out
@@ -238,7 +307,7 @@ export default function Profile() {
             )}
             placeholder="Search appointments..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.value)}
+            onChange={(e) => setSearchTerm(e.value)}
             style={{ marginBottom: '1rem' }}
           />
 
@@ -246,7 +315,7 @@ export default function Profile() {
             <p>No appointments found.</p>
           ) : (
             <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
-              {filteredAppointments.map(appt => (
+              {filteredAppointments.map((appt) => (
                 <li
                   key={appt.id}
                   onClick={() => handleAppointmentClick(appt)}
@@ -256,7 +325,7 @@ export default function Profile() {
                     cursor: 'pointer',
                   }}
                   tabIndex={0}
-                  onKeyDown={e => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       handleAppointmentClick(appt);
                     }
@@ -303,7 +372,7 @@ export default function Profile() {
               />
               <div style={{ marginTop: 12 }}>
                 <Button onClick={handleWindowClose} themeColor={'primary'}>
-                  Close
+                  Save
                 </Button>
               </div>
             </div>
@@ -311,7 +380,5 @@ export default function Profile() {
         )}
       </section>
     </>
-    }
-      </>
   );
 }
