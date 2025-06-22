@@ -9,15 +9,23 @@ import {
   AppBarSection,
   AppBarSpacer
 } from '@progress/kendo-react-layout';
-import { userIcon } from '@progress/kendo-svg-icons';
+import { calendarIcon, userIcon } from '@progress/kendo-svg-icons';
 
-export default function Header(props) {
+interface HeaderProps {
+  userID: string;
+}
+
+export default function Header(props: HeaderProps): JSX.Element {
   const router = useRouter();
 
-  const userId = props.userID; // Replace with dynamic value if you add login later
+  const userId: string = props.userID; // Replace with dynamic value if you add login later
 
-  const handleProfileClick = () => {
+  const handleProfileClick = (): void => {
     router.push(`/profile?userId=${encodeURIComponent(userId)}`);
+  };
+
+  const handleCalendarClick = (): void => {
+    router.push(`/`);
   };
 
   return (
@@ -30,11 +38,19 @@ export default function Header(props) {
       <AppBarSpacer />
       <AppBarSection>
         <Button
+          svgIcon={calendarIcon}
+          fillMode="flat"
+          type="button"
+          onClick={handleCalendarClick}
+        />
+
+        <Button
           svgIcon={userIcon}
           fillMode="flat"
           type="button"
           onClick={handleProfileClick}
         />
+        
       </AppBarSection>
     </AppBar>
   );

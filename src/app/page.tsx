@@ -6,7 +6,6 @@ import {
   DayView,
   WeekView,
   MonthView,
-  AgendaView,
   SchedulerDataChangeEvent,
   SchedulerItem,
   SchedulerItemProps,
@@ -48,7 +47,6 @@ const CustomItem = ({ dataItem, currentUserId, ...others }: SchedulerItemProps &
     cursor: isOwner ? 'pointer' : 'default',
   };
 
-  // Render the SchedulerItem but override title display with a span if not owner
   return (
     <SchedulerItem {...others} dataItem={dataItem} className={isOwner ? '' : styles.readonly} style={style}>
       { !isOwner ? (
@@ -181,7 +179,6 @@ export default function WorkingScheduler() {
 
     try {
       for (const appt of deleted) {
-        // Only allow deleting appointments owned by current user
         if (appt.createdBy === currentUserId) {
           await deleteDoc(doc(db, 'appointments', appt.id));
         }
@@ -225,14 +222,12 @@ export default function WorkingScheduler() {
         onDataChange={handleDataChange}
         form={(props) => <CustomEditForm {...props} currentUserId={currentUserId} />}
         editable={{ add: true, edit: true, remove: true, drag: true, resize: true, select: true }}
-        dataItemKey="id"
         modelFields={{
           id: 'id',
           title: 'title',
           start: 'start',
           end: 'end',
           description: 'description',
-          createdBy: 'createdBy',
         }}
         item={(props) => <CustomItem {...props} currentUserId={currentUserId} />}
         height={'90vh'}
