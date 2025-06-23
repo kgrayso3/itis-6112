@@ -20,10 +20,8 @@ export default function Profile() {
   const [userId, setUserId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [age, setAge] = useState(0);
-  const [emailAlerts, setEmailAlerts] = useState(false);
-  const [textAlerts, setTextAlerts] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState({ name: '', age: 0, emailAlerts: false, textAlerts: false });
+  const [draft, setDraft] = useState({ name: '', age: 0});
 
   const [appointments, setAppointments] = useState<any[]>([]); // Will hold appointments loaded from Firestore
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
@@ -40,8 +38,6 @@ export default function Profile() {
           const data = userSnap.data();
           setName(data.name || '');
           setAge(data.age || 0);
-          setEmailAlerts(data.emailAlerts || false);
-          setTextAlerts(data.textAlerts || false);
         }
         const userAppointmentsRef = doc(db, 'users', user.uid);
         const fetchAppointments = async () => {
@@ -88,7 +84,7 @@ export default function Profile() {
   };
 
   const handleEditClick = () => {
-    setDraft({ name, age, emailAlerts, textAlerts });
+    setDraft({ name, age });
     setIsEditing(true);
   };
 
@@ -99,9 +95,7 @@ export default function Profile() {
   const handleSave = async () => {
     const updatedProfile = {
       name: draft.name,
-      age: draft.age,
-      emailAlerts: draft.emailAlerts,
-      textAlerts: draft.textAlerts,
+      age: draft.age
     };
 
     try {
@@ -109,8 +103,6 @@ export default function Profile() {
         await setDoc(doc(db, 'users', userId), updatedProfile, { merge: true });
         setName(draft.name);
         setAge(draft.age);
-        setEmailAlerts(draft.emailAlerts);
-        setTextAlerts(draft.textAlerts);
         setIsEditing(false);
         console.log('User profile updated:', updatedProfile);
       }
@@ -224,22 +216,6 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="k-form-field" style={{ marginBottom: '1rem' }}>
-                <label className="k-label">Notifications</label>
-                <div>
-                  <Checkbox
-                    checked={draft.emailAlerts}
-                    onChange={(e) => setDraft((d) => ({ ...d, emailAlerts: e.value }))}
-                    label="Opt-in to email alerts"
-                  />
-                  <Checkbox
-                    checked={draft.textAlerts}
-                    onChange={(e) => setDraft((d) => ({ ...d, textAlerts: e.value }))}
-                    label="Opt-in to text alerts"
-                  />
-                </div>
-              </div>
-
               <div style={{ maxWidth: '50%' }}>
                 <Button onClick={handleSave} themeColor="primary">
                   Save Changes
@@ -251,13 +227,7 @@ export default function Profile() {
             <>
               <p><b>Name:</b> {name || '(not set)'}</p>
               <p><b>Age:</b> {age || '(not set)'}</p>
-              <div style={{ marginTop: '1rem' }}>
-                <strong>Notifications:</strong>
-                <ul style={{ marginTop: 4, marginLeft: 20 }}>
-                  <li>Email Alerts: {emailAlerts ? 'Yes' : 'No'}</li>
-                  <li>Text Alerts: {textAlerts ? 'Yes' : 'No'}</li>
-                </ul>
-              </div>
+              
             </>
           )}
 
@@ -286,7 +256,7 @@ export default function Profile() {
             backgroundColor: 'var(--kendo-component-bg)',
           }}
         >
-          <h2 style={{ marginBottom: '1rem' }}>Past Appointments</h2>
+          <h2 style={{ marginBottom: '1rem' }}>Appointments</h2>
 
           <TextBox
             prefix={() => (
